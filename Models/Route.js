@@ -1,32 +1,26 @@
 const mongoose = require('mongoose');
 
+const MessageSchema = new mongoose.Schema({
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now }
+});
+
 const RouteSchema = new mongoose.Schema({
     vehicleNumber: { type: String, required: true },
     driverName: { type: String, required: true },
     fromLocation: { type: String, required: true },
     toLocation: { type: String, required: true },
     departureDetails: {
-        departureTime: {
-            type: Date,
-            required: true,
-        },
+        departureTime: { type: Date, required: true },
     },
     status: {
         type: String,
-        default: 'scheduled', // Default status when the route is created
-        enum: ['scheduled', 'driving safely', 'active alerts'], // Enum for possible statuses
+        default: 'scheduled',
+        enum: ['scheduled', 'driving safely', 'active alerts'],
     },
-    // Embedding messages inside the Route schema
-    messages: [{
-        message: { 
-            type: String, 
-            required: true 
-        },
-        timestamp: { 
-            type: Date, 
-            default: Date.now 
-        }
-    }]
+    messages: [MessageSchema], // Use MessageSchema for messages
+    assignedTruck: { type: mongoose.Schema.Types.ObjectId, ref: 'AssignedTruck' }, // Reference to AssignedTruck model
+    driverPhoneNumber: String // Add driver phone number
 });
 
 module.exports = mongoose.model('Route', RouteSchema);
