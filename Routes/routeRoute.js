@@ -32,7 +32,8 @@ router.post('/create-route', async (req, res) => {
             fromLocation,
             toLocation,
             departureDetails,
-            messages: initialMessage ? [{ message: initialMessage }] : [] // Add initial message if provided
+            messages: initialMessage ? [{ message: initialMessage }] : [], // Add initial message if provided
+            logisticsHead: req.user._id // Save the logistics head ID
         });
 
         await newRoute.save();
@@ -61,6 +62,7 @@ router.post('/create-route', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 // DELETE route endpoint
 router.delete('/delete-route/:routeId', async (req, res) => {
@@ -171,8 +173,8 @@ router.put('/edit-route/:id', async (req, res) => {
 
 router.get('/getroutes', async (req, res) => {
     try {
-        // Retrieve all route details
-        const routes = await Route.find();
+        // Retrieve all route details for the logged-in logistics head
+        const routes = await Route.find({ logisticsHead: req.user._id });
 
         // Retrieve all assigned trucks
         const assignedTrucks = await AssignedTrucks.find();
@@ -194,6 +196,7 @@ router.get('/getroutes', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 

@@ -20,7 +20,8 @@ const RouteSchema = new mongoose.Schema({
     },
     messages: [MessageSchema], // Use MessageSchema for messages
     assignedTruck: { type: mongoose.Schema.Types.ObjectId, ref: 'AssignedTruck' }, // Reference to AssignedTruck model
-    driverPhoneNumber: String // Add driver phone number
+    driverPhoneNumber: String, // Add driver phone number
+    logisticsHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Reference to User model
 });
 
 module.exports = mongoose.model('Route', RouteSchema);

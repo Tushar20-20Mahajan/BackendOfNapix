@@ -3,14 +3,24 @@ const bcrypt = require('bcryptjs');
 const Driver = require('../Models/Driver');
 const mongoose = require('mongoose');
 const sendEmail = require('../Utils/email');
+const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 const { generatePassword, hashPassword } = require('../Utils/password');
-const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
+const { authenticateLogisticsHead } = require('../Utils/authmiddleware');
 const { authenticateDriver } = require('../Utils/authmiddleware');
 
 // Add Driver
-router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
+router.post('/add-driver', [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('mobileNumber').isMobilePhone().withMessage('Invalid mobile number'),
+    body('email').isEmail().withMessage('Invalid email format')
+], authenticateLogisticsHead, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { name, mobileNumber, email } = req.body;
 
     try {
@@ -25,7 +35,6 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
             email,
             password: hashedPassword,
             assignedBy: req.user._id
-            
         });
 
         // Save the driver to the database
@@ -37,17 +46,19 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
             console.log('Email sent successfully');
         } catch (emailError) {
             console.error('Failed to send email:', emailError.message);
-            // Optionally, you can log the error or notify an admin but ensure the driver creation is not affected
+            return res.status(500).json({ error: 'Driver added, but failed to send email with credentials.' });
         }
 
         // Respond to the client
-        res.status(201).json({ message: 'Driver added' });
+        res.status(201).json({ message: 'Driver added successfully' });
 
     } catch (err) {
+        console.error('Error adding driver:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
+// Delete Driver
 router.delete('/delete-driver/:email', authenticateLogisticsHead, async (req, res) => {
     const { email } = req.params;
 
@@ -59,18 +70,16 @@ router.delete('/delete-driver/:email', authenticateLogisticsHead, async (req, re
             return res.status(404).json({ message: 'Driver not found' });
         }
 
-        // Optionally, you can log the action or notify an admin here
-
         // Respond to the client
         res.status(200).json({ message: 'Driver deleted successfully' });
 
     } catch (err) {
-        console.error(err); // Log the error for debugging
+        console.error('Error deleting driver:', err);
         res.status(500).json({ error: 'Failed to delete driver' });
     }
 });
 
-
+// Get Driver Details
 router.get('/driverdetail', authenticateDriver, async (req, res) => {
     const { email } = req.query; // For logistics head to access other driver details
 
@@ -82,7 +91,6 @@ router.get('/driverdetail', authenticateDriver, async (req, res) => {
                 name: driver.name,
                 mobileNumber: driver.mobileNumber,
                 email: driver.email,
-                
             });
         }
 
@@ -114,19 +122,18 @@ router.get('/driverdetail', authenticateDriver, async (req, res) => {
     }
 });
 
-
-
-
-
-// Route to get all drivers
-router.get('/getdrivers', async (req, res) => {
+// Route to get all drivers linked to the logistics head
+router.get('/getdrivers', authenticateLogisticsHead, async (req, res) => {
     try {
-        const drivers = await Driver.find();
+        // Find drivers assigned to the authenticated logistics head
+        const drivers = await Driver.find({ assignedBy: req.user._id });
+
+        // Respond with the found drivers
         res.status(200).json(drivers);
     } catch (err) {
+        console.error('Error fetching drivers:', err);
         res.status(400).json({ error: err.message });
     }
 });
-
 
 module.exports = router;

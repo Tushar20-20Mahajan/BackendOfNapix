@@ -1,7 +1,7 @@
 const express = require('express');
 const Vehicle = require('../Models/Vehicle');
 const Route = require('../Models/Route');
-const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
+const { authenticateLogisticsHead } = require('../Utils/authmiddleware');
 const router = express.Router();
 
 // Add Vehicle
@@ -9,7 +9,7 @@ router.post('/add', authenticateLogisticsHead, async (req, res) => {
     console.log('Vehicle route hit');
     const { vehicleNumber } = req.body;
     try {
-        const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id });
+        const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id }); // Assign vehicle to the logged-in user
         await newVehicle.save();
         res.status(201).json({ message: 'Vehicle added' });
     } catch (err) {
@@ -28,7 +28,7 @@ router.delete('/delete/:vehicleNumber', authenticateLogisticsHead, async (req, r
         }
 
         // Find and delete the vehicle by vehicleNumber
-        const deletedVehicle = await Vehicle.findOneAndDelete({ vehicleNumber });
+        const deletedVehicle = await Vehicle.findOneAndDelete({ vehicleNumber, assignedBy: req.user._id }); // Ensure it belongs to the user
 
         if (!deletedVehicle) {
             return res.status(404).json({ message: 'Vehicle not found' });
@@ -45,19 +45,18 @@ router.delete('/delete/:vehicleNumber', authenticateLogisticsHead, async (req, r
     }
 });
 
-
-// Route to get all vehicles
-router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
-    console.log("get vehicleroute hit")
+// Route to get all vehicles associated with the logged-in logistics head
+router.get('/getvehicles', authenticateLogisticsHead, async (req, res) => {
+    console.log("get vehicle route hit");
     try {
-        const vehicles = await Vehicle.find();
+        const vehicles = await Vehicle.find({ assignedBy: req.user._id }); // Retrieve vehicles assigned to the user
         res.status(200).json(vehicles);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
-
+// Route to get messages for a specific vehicle
 router.get('/messages/:vehicleNumber', async (req, res) => {
     const { vehicleNumber } = req.params;
     try {
@@ -76,6 +75,5 @@ router.get('/messages/:vehicleNumber', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
-
 
 module.exports = router;
