@@ -20,7 +20,7 @@ const server = http.createServer(app);
 // Socket.IO configuration with CORS support
 const io = socketIo(server, {
     cors: {
-      origin: ['http://localhost:5501', 'https://napixbackend-2.onrender.com'],
+      origin: ['http://localhost:5501', 'https://backendofnapix.onrender.com'],
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type', 'Authorization']
     }
